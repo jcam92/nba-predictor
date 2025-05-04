@@ -13,10 +13,9 @@ HEADERS = {
 
 # --- Helper Functions ---
 def get_odds_data():
-    url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
+    url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds-player-props"
     params = {
         "regions": "us",
-        "markets": "h2h,spreads,totals,player_points",
         "oddsFormat": "decimal",
         "apiKey": API_KEY
     }
