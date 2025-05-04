@@ -19,7 +19,7 @@ def get_odds_data():
     "oddsFormat": "decimal",
     "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"
 }
-    }
+    
     response = requests.get(url, params=params)
     try:
         data = response.json()
