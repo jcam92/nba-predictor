@@ -32,6 +32,15 @@ def get_odds_data():
         st.error("Error parsing API response.")
         st.exception(e)
         return []
+
+response = requests.get(url, params=params)
+print("Status Code:", response.status_code)
+print("Response Text:", response.text)  # This will show what's actually being returned
+
+if response.status_code != 200:
+    raise Exception(f"API Error: {response.status_code} - {response.text}")
+
+data = response.json()
 def display_game(game):
     teams = game['home_team'], game['away_team']
     st.subheader(f"{teams[1]} @ {teams[0]}")
