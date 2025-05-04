@@ -9,14 +9,41 @@ st.title("NBA Betting Odds & Player Props")
 # --- API Setup ---
 API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
 BASE_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
-PLAYER_PROPS_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds-player-props"
-
+url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
 params = {
     "regions": "us",
-    "markets": "h2h,spreads,totals",
+    "markets": "player_points,player_assists,player_rebounds",
     "oddsFormat": "decimal",
     "dateFormat": "iso",
-    "apiKey": API_KEY
+    "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"
+}
+
+try:
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    data = response.json()
+except Exception as e:
+    st.error(f"API request failed: {e}")
+    st.stop()
+
+if not data:
+    st.warning("No player prop data available.")
+    st.stop()
+
+# Display data for first 5 games
+for game in data[:5]:
+    teams = game.get("teams", [])
+    if len(teams) >= 2:
+        st.subheader(f"{teams[0]} vs {teams[1]}")
+    else:
+        st.subheader("Teams not available")
+
+    for bookmaker in game.get("bookmakers", []):
+        st.write(f"### {bookmaker['title']}")
+        for market in bookmaker.get("markets", []):
+            st.write(f"**Market**: {market['key']}")
+            for outcome in market.get("outcomes", []):
+                st.write(f"{outcome['name']}: {outcome['price']}")
 }
 
 player_props_params = {
