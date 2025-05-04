@@ -1,71 +1,74 @@
 import streamlit as st
 import requests
-import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="NBA Betting Predictions", layout="centered")
+# --- App title ---
+st.set_page_config(page_title="NBA Predictor", layout="centered")
+st.title("NBA Betting Odds & Player Props")
 
+# --- API Setup ---
 API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
-HEADERS = {
-    "X-RapidAPI-Key": API_KEY,
-    "X-RapidAPI-Host": "api.the-odds-api.com"
+BASE_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
+PLAYER_PROPS_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds-player-props"
+
+params = {
+    "regions": "us",
+    "markets": "h2h,spreads,totals",
+    "oddsFormat": "decimal",
+    "dateFormat": "iso",
+    "apiKey": API_KEY
 }
 
-# --- Helper Functions ---
-def get_odds_data():
-    url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds-player-props"
-    params = {
+player_props_params = {
     "regions": "us",
     "oddsFormat": "decimal",
-    "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"
+    "dateFormat": "iso",
+    "apiKey": API_KEY
 }
-    
-    response = requests.get(url, params=params)
+
+# --- Helper function to fetch data ---
+def fetch_data(url, params):
     try:
-        data = response.json()
-        if isinstance(data, list):
-            return data
-        else:
-            st.error("API returned an error:")
-            st.json(data)
-            return []
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
     except Exception as e:
-        st.error("Error parsing API response.")
-        st.exception(e)
+        st.error(f"API request failed: {e}")
         return []
 
-response = requests.get(url, params=params)
-print("Status Code:", response.status_code)
-print("Response Text:", response.text)  # This will show what's actually being returned
+# --- Load game odds ---
+game_data = fetch_data(BASE_URL, params)
 
-if response.status_code != 200:
-    raise Exception(f"API Error: {response.status_code} - {response.text}")
+# --- Load player props ---
+props_data = fetch_data(PLAYER_PROPS_URL, player_props_params)
 
-data = response.json()
-def display_game(game):
-    teams = game['home_team'], game['away_team']
-    st.subheader(f"{teams[1]} @ {teams[0]}")
-    for bookmaker in game['bookmakers']:
-        st.markdown(f"**Bookmaker:** {bookmaker['title']}")
-        for market in bookmaker['markets']:
-            st.markdown(f"**Market:** {market['key'].capitalize()}")
-            odds_table = pd.DataFrame(market['outcomes'])
-            st.table(odds_table)
+# --- Display Results ---
+if not game_data:
+    st.warning("No game data available.")
+else:
+    for game in game_data[:5]:
+        st.markdown("---")
+        teams = game.get("teams", [])
+        commence = game.get("commence_time")
+        time_str = datetime.fromisoformat(commence).strftime('%Y-%m-%d %H:%M') if commence else "TBD"
+        st.subheader(f"{teams[0]} vs {teams[1]}")
+        st.caption(f"Start time: {time_str}")
 
-# --- App UI ---
-st.title("🏀 NBA Betting Predictions")
-st.markdown("Get real-time odds and player props for NBA games.")
+        for bookmaker in game.get("bookmakers", [])[:1]:  # Only show first bookmaker for simplicity
+            st.markdown(f"**Odds from {bookmaker['title']}**")
+            for market in bookmaker.get("markets", []):
+                st.markdown(f"**Market: {market['key'].capitalize()}**")
+                for outcome in market.get("outcomes", []):
+                    st.write(f"{outcome['name']}: {outcome['price']}")
 
-with st.spinner("Fetching latest data..."):
-    try:
-        data = get_odds_data()
-        if not data:
-            st.warning("No game data available.")
-        else:
-            for game in data[:5]:  # limit to 5 games for mobile usability
-                display_game(game)
-    except Exception as e:
-        st.error("Failed to load data from API.")
-        st.exception(e)
-
-st.caption(f"Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        # Show player props matching this game
+        for prop_game in props_data:
+            if set(prop_game.get("teams", [])) == set(game.get("teams", [])):
+                st.markdown("**Popular Player Props**")
+                for bookmaker in prop_game.get("bookmakers", [])[:1]:
+                    for market in bookmaker.get("markets", []):
+                        if market["key"] in ["player_points", "player_assists", "player_rebounds"]:
+                            st.markdown(f"*{market['key'].replace('_', ' ').title()}*")
+                            for outcome in market.get("outcomes", [])[:3]:
+                                st.write(f"{outcome['name']}: {outcome['price']}")
+                break
