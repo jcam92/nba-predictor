@@ -1,7 +1,11 @@
 import requests
 import streamlit as st
+from dotenv import load_dotenv
 
-# Function to get odds data from the API
+# Load the API key from .env file
+load_dotenv()
+
+# Define the function to fetch NBA odds
 def get_odds_data():
     url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
     params = {
@@ -9,27 +13,43 @@ def get_odds_data():
         "markets": "player_points,player_assists,player_rebounds",  # Multiple markets
         "oddsFormat": "decimal",
         "dateFormat": "iso",
-        "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"  # Replace with your API key
+        "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"  # API key
     }
     
     try:
         response = requests.get(url, params=params)
-        response.raise_for_status()  # Ensure the request was successful
+        response.raise_for_status()  # Ensure request was successful
         data = response.json()
         return data
     except requests.exceptions.RequestException as e:
         st.error(f"API request failed: {e}")
         return None
 
-# Streamlit app code
+# Function to fetch events (if needed for a specific use case)
+def fetch_events():
+    url = "https://api.the-odds-api.com/v4/sports/basketball_nba/events"
+    params = {
+        "regions": "us",  # Define the region
+        "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"  # API key
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Check for successful response
+        events = response.json()
+        return events
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching events: {e}")
+        return None
+
+# Streamlit app setup
 st.title("NBA Betting Predictions")
 
-# Get data from the API
+# Fetch odds data
 odds_data = get_odds_data()
 
 if odds_data:
     for game in odds_data:
-        # Display the game details
         teams = game['teams']
         st.subheader(f"{teams[0]} vs {teams[1]}")
 
@@ -38,12 +58,12 @@ if odds_data:
 
             for market in bookmaker.get("markets", []):
                 st.write(f"**Market: {market['key']}**")  # Show the market type (e.g., player_points)
-                
-                for outcome in market.get("outcomes", []):
-                    # Display odds for each outcome
-                    st.write(f"{outcome['name'] if 'name' in outcome else 'Unknown Player'} - "
-                             f"Under: {outcome['price']}")
 
+                for outcome in market.get("outcomes", []):
+                    st.write(f"{outcome.get('name', 'Unknown Player')} - "
+                             f"Under: {outcome['price']}")
+else:
+    st.write("No odds data available at the moment.")
 events = fetch_events()
 for event in events[:5]:  # Limit to first 5 events for brevity
     st.subheader(f"{event['home_team']} vs {event['away_team']}")
