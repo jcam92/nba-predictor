@@ -40,7 +40,8 @@ for event in events[:5]:  # Limit to first 5 events for brevity
             for market in bookmaker.get("markets", []):
                 st.markdown(f"*Market: {market['key']}*")
                 for outcome in market.get("outcomes", []):
-                    st.write(f"{outcome['name']}: {outcome['price']}")
+                    label = outcome.get("name", "Unknown Player")  # Try to get the player name
+            st.write(f"{label}: {outcome['price']}")
 # --- API Setup ---
 API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
 BASE_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
