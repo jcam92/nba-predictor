@@ -1,34 +1,49 @@
-import streamlit as st
 import requests
+import streamlit as st
+from dotenv import load_dotenv
 
-API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
-
-def fetch_events():
-    events_url = "https://api.the-odds-api.com/v4/sports/basketball_nba/events"
-    params = {"apiKey": API_KEY}
-    response = requests.get(events_url, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error("Failed to fetch events.")
-        return []
-
-def fetch_player_props(event_id):
-    odds_url = f"https://api.the-odds-api.com/v4/sports/basketball_nba/events/{event_id}/odds"
+# Function to get odds data from the API
+def get_odds_data():
+    url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
     params = {
-        "apiKey": API_KEY,
         "regions": "us",
-        "markets": "player_points,player_assists,player_rebounds",
-        "oddsFormat": "decimal"
+        "markets": "player_points,player_assists,player_rebounds",  # Multiple markets
+        "oddsFormat": "decimal",
+        "dateFormat": "iso",
+        "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"  # Replace with your API key
     }
-    response = requests.get(odds_url, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.warning(f"No player props available for event {event_id}.")
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Ensure the request was successful
+        data = response.json()
+        return data
+    except requests.exceptions.RequestException as e:
+        st.error(f"API request failed: {e}")
         return None
 
-st.title("NBA Player Props")
+# Streamlit app code
+st.title("NBA Betting Predictions")
+
+# Get data from the API
+odds_data = get_odds_data()
+
+if odds_data:
+    for game in odds_data:
+        # Display the game details
+        teams = game['teams']
+        st.subheader(f"{teams[0]} vs {teams[1]}")
+
+        for bookmaker in game.get("bookmakers", []):
+            st.markdown(f"**Bookmaker: {bookmaker['title']}**")
+
+            for market in bookmaker.get("markets", []):
+                st.write(f"**Market: {market['key']}**")  # Show the market type (e.g., player_points)
+                
+                for outcome in market.get("outcomes", []):
+                    # Display odds for each outcome
+                    st.write(f"{outcome['name'] if 'name' in outcome else 'Unknown Player'} - "
+                             f"Under: {outcome['price']}")
 
 events = fetch_events()
 for event in events[:5]:  # Limit to first 5 events for brevity
