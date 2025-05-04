@@ -44,7 +44,7 @@ for game in data[:5]:
             st.write(f"**Market**: {market['key']}")
             for outcome in market.get("outcomes", []):
                 st.write(f"{outcome['name']}: {outcome['price']}")
-}
+
 
 player_props_params = {
     "regions": "us",
