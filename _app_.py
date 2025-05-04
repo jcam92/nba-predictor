@@ -1,5 +1,9 @@
 import requests
 import streamlit as st
+from dotenv import load_dotenv
+
+# Load the API key from .env file
+load_dotenv()
 
 # Define the function to fetch NBA odds
 def get_odds_data():
@@ -21,21 +25,23 @@ def get_odds_data():
         st.error(f"API request failed: {e}")
         return None
 
-# Function to fetch events (if needed for a specific use case)
-def fetch_events():
-    url = "https://api.the-odds-api.com/v4/sports/basketball_nba/events"
+# Define a function to fetch player props for a specific event
+def fetch_player_props(event_id):
+    url = f"https://api.the-odds-api.com/v4/sports/basketball_nba/odds-player-props/{event_id}"
     params = {
-        "regions": "us",  # Define the region
+        "regions": "us",  # Specify region
+        "oddsFormat": "decimal",
+        "dateFormat": "iso",
         "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"  # API key
     }
-
+    
     try:
         response = requests.get(url, params=params)
-        response.raise_for_status()  # Check for successful response
-        events = response.json()
-        return events
+        response.raise_for_status()  # Ensure request was successful
+        player_props = response.json()
+        return player_props
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching events: {e}")
+        st.error(f"Error fetching player props: {e}")
         return None
 
 # Streamlit app setup
@@ -58,20 +64,17 @@ if odds_data:
                 for outcome in market.get("outcomes", []):
                     st.write(f"{outcome.get('name', 'Unknown Player')} - "
                              f"Under: {outcome['price']}")
+
+            # If you need to fetch player props, use the event ID
+            event_id = game.get('id')  # Make sure this is available
+            if event_id:
+                player_props = fetch_player_props(event_id)
+                if player_props:
+                    st.write(f"Player Props for {teams[0]} vs {teams[1]}:")
+                    for prop in player_props:
+                        st.write(f"{prop['name']} - {prop['market']} - {prop['price']}")
 else:
     st.write("No odds data available at the moment.")
-events = fetch_events()
-for event in events[:5]:  # Limit to first 5 events for brevity
-    st.subheader(f"{event['home_team']} vs {event['away_team']}")
-    odds_data = fetch_player_props(event['id'])
-    if odds_data:
-        for bookmaker in odds_data.get("bookmakers", []):
-            st.markdown(f"**Bookmaker: {bookmaker['title']}**")
-            for market in bookmaker.get("markets", []):
-                st.markdown(f"*Market: {market['key']}*")
-                for outcome in market.get("outcomes", []):
-                    label = outcome.get("name", "Unknown Player")  # Try to get the player name
-            st.write(f"{label}: {outcome['price']}")
 # --- API Setup ---
 API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
 BASE_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
