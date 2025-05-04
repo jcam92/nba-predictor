@@ -1,11 +1,46 @@
 import streamlit as st
 import requests
-from datetime import datetime
 
-# --- App title ---
-st.set_page_config(page_title="NBA Predictor", layout="centered")
-st.title("NBA Betting Odds & Player Props")
+API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
 
+def fetch_events():
+    events_url = "https://api.the-odds-api.com/v4/sports/basketball_nba/events"
+    params = {"apiKey": API_KEY}
+    response = requests.get(events_url, params=params)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("Failed to fetch events.")
+        return []
+
+def fetch_player_props(event_id):
+    odds_url = f"https://api.the-odds-api.com/v4/sports/basketball_nba/events/{event_id}/odds"
+    params = {
+        "apiKey": API_KEY,
+        "regions": "us",
+        "markets": "player_points,player_assists,player_rebounds",
+        "oddsFormat": "decimal"
+    }
+    response = requests.get(odds_url, params=params)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.warning(f"No player props available for event {event_id}.")
+        return None
+
+st.title("NBA Player Props")
+
+events = fetch_events()
+for event in events[:5]:  # Limit to first 5 events for brevity
+    st.subheader(f"{event['home_team']} vs {event['away_team']}")
+    odds_data = fetch_player_props(event['id'])
+    if odds_data:
+        for bookmaker in odds_data.get("bookmakers", []):
+            st.markdown(f"**Bookmaker: {bookmaker['title']}**")
+            for market in bookmaker.get("markets", []):
+                st.markdown(f"*Market: {market['key']}*")
+                for outcome in market.get("outcomes", []):
+                    st.write(f"{outcome['name']}: {outcome['price']}")
 # --- API Setup ---
 API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
 BASE_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
