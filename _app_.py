@@ -1,9 +1,5 @@
 import requests
 import streamlit as st
-from dotenv import load_dotenv
-
-# Load the API key from .env file
-load_dotenv()
 
 # Define the function to fetch NBA odds
 def get_odds_data():
