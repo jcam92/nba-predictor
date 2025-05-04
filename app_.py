@@ -46,9 +46,19 @@ model.fit(X_fake, y_fake)
 odds_data = fetch_odds()
 if odds_data:
     for game in odds_data:
-        teams = game["teams"]
-        home_team = game["home_team"]
-        away_team = [t for t in teams if t != home_team][0]
+        home_team = game.get("home_team", "Unknown")
+        away_team = None
+
+        # Try to extract away team from outcomes in the first bookmaker
+        try:
+            outcomes = game["bookmakers"][0]["markets"][0]["outcomes"]
+            for team_info in outcomes:
+                if team_info["name"] != home_team:
+                    away_team = team_info["name"]
+                    break
+        except (IndexError, KeyError, TypeError):
+            away_team = "Unknown"
+
         st.subheader(f"{away_team} @ {home_team}")
 
         # Generate predictions
