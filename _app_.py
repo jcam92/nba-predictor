@@ -1,6 +1,5 @@
 import requests
 import streamlit as st
-from dotenv import load_dotenv
 
 # Function to get odds data from the API
 def get_odds_data():
