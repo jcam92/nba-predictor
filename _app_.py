@@ -5,7 +5,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="NBA Betting Predictions", layout="centered")
 
-API_KEY = st.secrets["API_KEY"]
+API_KEY = "9f3bdc38a31f49ed103ac514d45b15bc"
 HEADERS = {
     "X-RapidAPI-Key": API_KEY,
     "X-RapidAPI-Host": "api.the-odds-api.com"
