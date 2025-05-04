@@ -21,8 +21,18 @@ def get_odds_data():
         "apiKey": API_KEY
     }
     response = requests.get(url, params=params)
-    return response.json()
-
+    try:
+        data = response.json()
+        if isinstance(data, list):
+            return data
+        else:
+            st.error("API returned an error:")
+            st.json(data)
+            return []
+    except Exception as e:
+        st.error("Error parsing API response.")
+        st.exception(e)
+        return []
 def display_game(game):
     teams = game['home_team'], game['away_team']
     st.subheader(f"{teams[1]} @ {teams[0]}")
