@@ -15,9 +15,10 @@ HEADERS = {
 def get_odds_data():
     url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds-player-props"
     params = {
-        "regions": "us",
-        "oddsFormat": "decimal",
-        "apiKey": API_KEY
+    "regions": "us",
+    "oddsFormat": "decimal",
+    "apiKey": "9f3bdc38a31f49ed103ac514d45b15bc"
+}
     }
     response = requests.get(url, params=params)
     try:
