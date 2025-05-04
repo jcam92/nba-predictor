@@ -1,47 +1,52 @@
-
 import streamlit as st
 import requests
+import pandas as pd
 from datetime import datetime
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
-API_KEY = os.getenv("API_KEY")
-BASE_URL = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds/"
+st.set_page_config(page_title="NBA Betting Predictions", layout="centered")
 
-def fetch_nba_odds():
+API_KEY = st.secrets["API_KEY"]
+HEADERS = {
+    "X-RapidAPI-Key": API_KEY,
+    "X-RapidAPI-Host": "api.the-odds-api.com"
+}
+
+# --- Helper Functions ---
+def get_odds_data():
+    url = "https://api.the-odds-api.com/v4/sports/basketball_nba/odds"
     params = {
         "regions": "us",
         "markets": "h2h,spreads,totals,player_points",
         "oddsFormat": "decimal",
         "apiKey": API_KEY
     }
-    response = requests.get(BASE_URL, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error(f"Failed to fetch data: {response.status_code}")
-        return []
+    response = requests.get(url, params=params)
+    return response.json()
 
-def display_game_odds(games):
-    for game in games:
-        teams = f"{game['home_team']} vs {game['away_team']}"
-        st.subheader(teams)
-        st.caption(f"Commence time: {datetime.fromisoformat(game['commence_time'][:-1])}")
-        for bookmaker in game.get("bookmakers", []):
-            st.markdown(f"**{bookmaker['title']}**")
-            for market in bookmaker.get("markets", []):
-                st.markdown(f"__{market['key'].replace('_', ' ').title()}__")
-                for outcome in market.get("outcomes", []):
-                    st.write(f"{outcome['name']}: {outcome['price']}")
+def display_game(game):
+    teams = game['home_team'], game['away_team']
+    st.subheader(f"{teams[1]} @ {teams[0]}")
+    for bookmaker in game['bookmakers']:
+        st.markdown(f"**Bookmaker:** {bookmaker['title']}")
+        for market in bookmaker['markets']:
+            st.markdown(f"**Market:** {market['key'].capitalize()}")
+            odds_table = pd.DataFrame(market['outcomes'])
+            st.table(odds_table)
 
-st.set_page_config(page_title="NBA Betting Predictions", layout="centered")
-
+# --- App UI ---
 st.title("🏀 NBA Betting Predictions")
-st.markdown("#### Powered by The Odds API")
+st.markdown("Get real-time odds and player props for NBA games.")
 
-games = fetch_nba_odds()
-if games:
-    display_game_odds(games)
-else:
-    st.warning("No games found or unable to retrieve data.")
+with st.spinner("Fetching latest data..."):
+    try:
+        data = get_odds_data()
+        if not data:
+            st.warning("No game data available.")
+        else:
+            for game in data[:5]:  # limit to 5 games for mobile usability
+                display_game(game)
+    except Exception as e:
+        st.error("Failed to load data from API.")
+        st.exception(e)
+
+st.caption(f"Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
